@@ -1,0 +1,57 @@
+install.packages("data.table")
+library(dplyr)
+library(magrittr)
+library(data.table)
+endo<- fread("ANADATA1.csv")
+
+endoX=data.frame(endo[order(endo$V12,decreasing=T), ])
+#差分導出
+diffV1=endoX$V12
+diffV1=as.numeric(diffV1)
+X=1
+diff1=data.frame(diff(diffV1))
+diff1=rbind(diff1,X)
+tim=cbind(diffV1,diff1)
+
+#tapply 2つ以下のトリップ排除
+D=data.frame(endoX$V2)
+B=(endoX$V12)
+S=length(B)
+C=rep(1,S)
+AB=data.frame(cbind(D,C))
+A=tapply(AB$C,list(AB$endoX.V2),sum)
+A=data.frame(A)
+write.csv(A, "A.csv")
+x <- fread("A.csv", header=TRUE, skip=0)
+x=data.frame(x)
+DATA=filter(x,A>2)
+DATA=data.frame(DATA)
+O=left_join(endoX,DATA,by=c("V2"="V1"))
+DATAnew=filter(O,A>2)
+DATAnew=data.frame(DATAnew[order(DATAnew$V7,decreasing=T), ])
+S = data.frame(DATAnew[order(DATAnew$V2, decreasing = T),])
+
+
+#緯度経度データ追加
+site2<- fread("site2.csv")
+DATAspot=left_join(S,site2,by=c("V5"="site"))
+write.csv(DATAspot, "DATAspot.csv")
+
+#データソート
+macdata=arrange(DATAspot,V2,V3,V4)
+second=data.frame(macdata$V2,macdata$V3,macdata$V4,macdata$lat,macdata$lon)
+
+#1つ以下トリップデータ排除
+second=data.frame(paste(second$macdata.V2,second$macdata.V3),second$macdata.V4,second$macdata.lat,second$macdata.lon)
+second <- second %>% mutate(ten = 1)
+colnames(second) <- c("A","time","lat","lon","S")
+second <- second %>% mutate(macdata$V7)
+P=tapply(second$S,list(second$A),sum)
+P=data.frame(P)
+write.csv(P, "P.csv")
+P<- fread("P.csv", header=TRUE, skip=0)
+number=data.frame(P)
+DATAX=filter(P,P>2)
+daydata=left_join(second,DATAX,by=c("A"="V1"))
+daydata=filter(daydata,P>2)
+write.csv(daydata, "wifidataframe.csv")
